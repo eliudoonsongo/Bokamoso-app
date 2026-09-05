@@ -25,6 +25,7 @@ export default defineConfig({
       NEXT_DIST_DIR: ".next-test",
       BOKAMOSO_STORAGE: "sqlite",
       BOKAMOSO_DB_PATH: `data/test-${process.pid}.sqlite`,
+      NVIDIA_API_KEY: "",
       GEMINI_API_KEY: "",
       ADMIN_UPLOAD_KEY: "",
     },

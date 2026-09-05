@@ -1,6 +1,8 @@
 import "server-only";
 import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import { z } from "zod";
+import { aiConfig } from "./ai-config";
 import { learningSuiteSchema, validateSuite, type LearnerProgress, type Source } from "./learning";
 import { sampleSources, sampleSuite } from "./demo";
 import type { Citation, Notebook } from "./types";
@@ -12,27 +14,52 @@ Decompose concepts into prerequisites, core concepts and applications. Distingui
 Return ONLY valid JSON matching the supplied schema, without Markdown fences or introductory text.`;
 
 async function generateJson(schema: z.ZodType, context: unknown, task: string) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new RequestError("Gemini is not connected. Add GEMINI_API_KEY to .env.local to generate from your own sources.", 503);
-  const client = new GoogleGenAI({ apiKey });
-  let response;
+  const config = aiConfig();
+  if (!config) throw new RequestError("AI is not connected. Configure NVIDIA_API_KEY on the server to generate from your own sources.", 503);
+  const providerName = config.provider === "nvidia" ? "NVIDIA" : "Gemini";
+  let content: string | null | undefined;
+  let truncated = false;
   try {
-    response = await client.models.generateContent({
-      model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
-      contents: JSON.stringify({ task, context }),
-      config: { systemInstruction: groundingRules, responseMimeType: "application/json", responseJsonSchema: z.toJSONSchema(schema), temperature: 0.2, maxOutputTokens: 10000, httpOptions: { timeout: 90_000 } },
-    });
-  } catch {
-    throw new RequestError("Gemini could not complete this request. Check the server API key, model access and quota, then retry.", 502);
+    if (config.provider === "nvidia") {
+      const client = new OpenAI({ apiKey: process.env.NVIDIA_API_KEY!.trim(), baseURL: "https://integrate.api.nvidia.com/v1", timeout: 90_000, maxRetries: 0 });
+      const request: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming & { chat_template_kwargs: { enable_thinking: boolean } } = {
+        model: config.model,
+        messages: [
+          { role: "system", content: `${groundingRules}\nJSON schema: ${JSON.stringify(z.toJSONSchema(schema))}` },
+          { role: "user", content: JSON.stringify({ task, context }) },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2,
+        max_tokens: 10000,
+        stream: false,
+        chat_template_kwargs: { enable_thinking: false },
+      };
+      const response = await client.chat.completions.create(request);
+      content = response.choices[0]?.message.content;
+      truncated = response.choices[0]?.finish_reason === "length";
+    } else {
+      const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY!.trim() });
+      const response = await client.models.generateContent({
+        model: config.model,
+        contents: JSON.stringify({ task, context }),
+        config: { systemInstruction: groundingRules, responseMimeType: "application/json", responseJsonSchema: z.toJSONSchema(schema), temperature: 0.2, maxOutputTokens: 10000, httpOptions: { timeout: 90_000 } },
+      });
+      content = response.text;
+    }
+  } catch (error) {
+    if (error instanceof OpenAI.APIConnectionTimeoutError) throw new RequestError("NVIDIA timed out. Try again or select a smaller set of source chapters.", 504);
+    if (error instanceof OpenAI.APIError && [404, 410].includes(error.status || 0)) throw new RequestError("The configured NVIDIA model is unavailable. Set NVIDIA_MODEL to an available model from the NVIDIA catalog.", 503);
+    throw new RequestError(`${providerName} could not complete this request. Check the server API key, model access and quota, then retry.`, 502);
   }
-  if (!response.text) throw new RequestError("The model returned no usable content. Try a different source selection.", 422);
-  try { return schema.parse(JSON.parse(response.text)); } catch { throw new RequestError("The model returned an invalid payload. Nothing was saved; please retry.", 502); }
+  if (truncated) throw new RequestError("The model reached its output limit. Nothing was saved; try a smaller source selection.", 502);
+  if (!content) throw new RequestError("The model returned no usable content. Try a different source selection.", 422);
+  try { return schema.parse(JSON.parse(content)); } catch { throw new RequestError("The model returned an invalid payload. Nothing was saved; please retry.", 502); }
 }
 
 export async function generateSuite(notebook: Notebook, sources: Source[], progress: LearnerProgress) {
-  if (!process.env.GEMINI_API_KEY) {
+  if (!aiConfig()) {
     const completeSample = sources.length === sampleSources.length && sampleSources.every((sample) => sources.some((source) => source.id === sample.id && source.text === sample.text));
-    if (!completeSample) throw new RequestError("Select all three sample sources, or connect Gemini to generate a new learning suite from this selection.", 503);
+    if (!completeSample) throw new RequestError("Select all three sample sources, or connect NVIDIA to generate a new learning suite from this selection.", 503);
     const suite = structuredClone(sampleSuite);
     const gap = suite.mindMap.find((node) => progress.gapNodes.includes(node.id));
     if (gap) suite.gamifiedQuestPlan = { ...suite.gamifiedQuestPlan, questTitle: `Mission: ${gap.label}`, narrativeHook: `Revisit ${gap.label.toLowerCase()}, then complete your diagnostic to close this gap.`, targetNode: gap.id };
@@ -65,7 +92,7 @@ export function extractiveAnswer(question: string, sources: Source[]): { answer:
 }
 
 export async function answerQuestion(question: string, notebook: Notebook, sources: Source[], progress: LearnerProgress) {
-  if (!process.env.GEMINI_API_KEY) return extractiveAnswer(question, sources);
+  if (!aiConfig()) return extractiveAnswer(question, sources);
   const result = await generateJson(chatSchema, { question, grade: notebook.grade, subject: notebook.subject, module: notebook.module, mastered_nodes: progress.masteredNodes, gap_nodes: progress.gapNodes, sources: sources.map((source) => ({ sourceId: source.id, title: source.title, chunks: source.chunks })) }, "Answer this question using selected source chunks only. Keep it conversational, concise and age appropriate. Return plain text in answer. For every factual paragraph, include a citation with an exact verbatim quote from a supplied chunk. If unsupported, set supported to false, provide an abstention, and return no citations.");
   const parsed = chatSchema.parse(result);
   if (!parsed.supported) return { answer: "I couldn't find enough information in the selected sources to answer that. Add relevant material or ask a question within this module.", citations: [], supported: false };

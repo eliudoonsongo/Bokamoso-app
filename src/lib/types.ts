@@ -1,3 +1,4 @@
+import type { aiConfig } from "./ai-config";
 import type { LearnerProgress, LearningSuite, Source } from "./learning";
 
 export type Notebook = { id: string; title: string; grade: number; subject: string; module: string };
@@ -14,6 +15,7 @@ export type WorkspaceData = {
   progress: LearnerProgress;
   notes: Note[];
   messages: ChatMessage[];
+  ai: ReturnType<typeof aiConfig>;
   aiConfigured: boolean;
   adminProtected: boolean;
 };

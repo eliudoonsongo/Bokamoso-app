@@ -8,7 +8,7 @@
     "start": "cross-env NEXT_DIST_DIR=.next-build next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "tsx --test tests/*.test.mjs",
+    "test": "tsx --conditions=react-server --test tests/*.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "@xyflow/react": "^12.11.6",
     "lucide-react": "^1.41.0",
     "next": "16.3.4",
+    "openai": "^7.10.0",
     "pdf-parse": "^2.4.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",

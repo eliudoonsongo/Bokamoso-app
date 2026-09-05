@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { answerQuestion } from "@/lib/ai";
+import { aiConfig } from "@/lib/ai-config";
 import { errorResponse, learnerId, rateLimit, readJson, selectedContext, selectionSchema } from "@/lib/server";
 import { clearMessages, getNotebook, getProgress, saveMessage } from "@/lib/store";
 
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     const assistant = { id: randomUUID(), role: "assistant" as const, content: result.answer, citations: result.citations };
     await saveMessage(context.notebook.id, user);
     await saveMessage(context.notebook.id, assistant);
-    return Response.json({ user, assistant, mode: process.env.GEMINI_API_KEY ? "gemini" : "source-excerpts" });
+    return Response.json({ user, assistant, mode: aiConfig()?.provider || "source-excerpts" });
   } catch (error) { return errorResponse(error); }
 }
 

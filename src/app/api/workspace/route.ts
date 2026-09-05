@@ -1,3 +1,4 @@
+import { aiConfig } from "@/lib/ai-config";
 import { errorResponse, learnerId } from "@/lib/server";
 import { getMessages, getNotebook, getNotes, getProgress, getSources, getSuite, listNotebooks } from "@/lib/store";
 
@@ -11,11 +12,12 @@ export async function GET(request: Request) {
       getSuite(notebook.id), listNotebooks(owner), getSources(notebook.id),
       getProgress(notebook.id), getNotes(notebook.id), getMessages(notebook.id),
     ]);
+    const ai = aiConfig();
     return Response.json({
       notebook, notebooks, sources,
       suite: stored?.suite || null, suiteId: stored?.id || null, suiteSourceIds: stored?.sourceIds || [],
       progress, notes, messages,
-      aiConfigured: Boolean(process.env.GEMINI_API_KEY), adminProtected: Boolean(process.env.ADMIN_UPLOAD_KEY) || process.env.NODE_ENV === "production",
+      ai, aiConfigured: Boolean(ai), adminProtected: Boolean(process.env.ADMIN_UPLOAD_KEY) || process.env.NODE_ENV === "production",
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return errorResponse(error); }
 }

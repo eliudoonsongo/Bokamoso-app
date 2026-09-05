@@ -19,7 +19,9 @@ Set server-only variables in `.env.local` or the server environment. [The enviro
 
 | Variable | Purpose |
 | --- | --- |
-| `GEMINI_API_KEY` | Enables generated learning suites and cited AI answers from selected sources. Never expose it through a `NEXT_PUBLIC_` variable. |
+| `NVIDIA_API_KEY` | NVIDIA Build key for generated learning suites and cited AI answers. Takes priority when both provider keys are set. Never expose it through a `NEXT_PUBLIC_` variable. |
+| `NVIDIA_MODEL` | NVIDIA model ID. Defaults to `nvidia/nemotron-3-super-120b-a12b`, verified on September 6, 2026. Requires model availability and quota. |
+| `GEMINI_API_KEY` | Optional alternative provider, used only when `NVIDIA_API_KEY` is absent. Never expose it through a `NEXT_PUBLIC_` variable. |
 | `GEMINI_MODEL` | Structured-output model ID. Defaults to `gemini-3.8-flash`; requires model access and quota in your Google project. |
 | `ADMIN_UPLOAD_KEY` | Shared upload/delete key entered by an administrator in the source dialog. Required for uploads in production; optional only in local development. |
 | `BOKAMOSO_STORAGE` | `sqlite` for a local database or `supabase` for hosted storage. If unset, Supabase variables select Supabase; otherwise SQLite is used. |
@@ -28,7 +30,11 @@ Set server-only variables in `.env.local` or the server environment. [The enviro
 | `SUPABASE_SECRET_KEY` | Server secret API key. A legacy `SUPABASE_SERVICE_ROLE_KEY` is also supported. Never use a publishable/anon key or the database password here. |
 | `BOKAMOSO_DB_NAMESPACE` | Supabase notebook namespace; defaults to `default`. Use separate namespaces for production, preview and disposable verification data. |
 
-Without Gemini, chat returns literal excerpts from selected sources, not generated explanations. Regeneration works only with the three unchanged sample sources. Other selections show a configuration error instead of inventing a suite. Live Gemini responses are not covered by the offline tests.
+Without either provider key, chat returns literal excerpts from selected sources, not generated explanations. Regeneration works only with the three unchanged sample sources. Other selections show a configuration error instead of inventing a suite.
+
+NVIDIA uses `https://integrate.api.nvidia.com/v1/chat/completions` through the OpenAI SDK, requests JSON with the schema in the system prompt, and disables thinking for the default Nemotron model. Every response still passes the app's schema, pedagogical and citation checks before saving. Requests time out after 90 seconds and are not automatically retried or sent to another provider. Workspace settings display the configured provider and exact model, not an inferred health status.
+
+NVIDIA retired `z-ai/glm-5.2` on August 21, 2026; its endpoint returns HTTP 410. An NVIDIA API key is not restricted to that model. Use an available model ID through `NVIDIA_MODEL`; the app reports an explicit configuration error for unavailable models.
 
 Keep credentials in the ignored local environment file or the hosting provider's secret settings. The environment template must contain placeholders only. Explicitly set `BOKAMOSO_STORAGE=sqlite` locally when retaining the local database alongside hosted credentials.
 
@@ -36,14 +42,14 @@ Keep credentials in the ignored local environment file or the hosting provider's
 
 1. Apply [the database migration](supabase/migrations/20260905000100_bokamoso_store.sql) to a new Supabase project using the SQL editor or your migration workflow. The SQL editor does not record Supabase CLI migration history; do not blindly reapply an already installed schema.
 2. Import this GitHub repository into Vercel, select the Next.js preset and Node.js 24, and retain the repository's build command. Its build output is `.next-build`.
-3. Configure server-only `BOKAMOSO_STORAGE=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `BOKAMOSO_DB_NAMESPACE=production` and a strong `ADMIN_UPLOAD_KEY` before deploying. Add Gemini settings only when a valid key and model access are available. Use a different namespace for preview deployments.
+3. Configure server-only `BOKAMOSO_STORAGE=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `BOKAMOSO_DB_NAMESPACE=production` and a strong `ADMIN_UPLOAD_KEY` before deploying. Add `NVIDIA_API_KEY` as an encrypted secret and set `NVIDIA_MODEL` for live generation, or configure Gemini as the alternative provider. Use a different namespace for preview deployments. Local environment changes do not update Vercel; configure the hosting environment and redeploy too.
 4. Verify notebook creation, progress, notes and reload persistence in the deployed app. The existing local SQLite database is not automatically migrated to Supabase.
 
 The migration creates six `bokamoso_` tables with RLS enabled. Browser roles have no direct table or RPC access; only the server's service role can access them. The server enforces cookie ownership before notebook operations. Atomic notebook creation, suite replacement/source deletion and revision-checked progress updates protect concurrent writes.
 
 ## Learning Contract
 
-`POST /api/suite` accepts `{ "notebookId": "...", "sourceIds": ["..."] }` and returns the exact six-field JSON payload, with no wrapper. `X-Suite-Id` identifies the saved suite and `X-Generation-Mode` identifies sample versus AI generation.
+`POST /api/suite` accepts `{ "notebookId": "...", "sourceIds": ["..."] }` and returns the exact six-field JSON payload, with no wrapper. `X-Suite-Id` identifies the saved suite and `X-Generation-Mode` is `sample`, `nvidia` or `gemini`.
 
 - `moduleSummary`
 - `mindMap`: `{ id, label, parentId, summary }`, a connected hierarchy with one null-parent root.
@@ -62,7 +68,7 @@ Create a notebook with a grade, subject and module, then upload or paste its cur
 
 Selected source context is limited to 80,000 characters. Chunks retain a 200-character overlap. Changing source selection disables the old suite; deleting a source invalidates saved suites. Notes, messages, sources and progress persist in the selected storage backend.
 
-Gemini receives the selected chunks, notebook scope and relevant learner state. Source text is treated as untrusted data. Chat citations must name an actual supplied chunk and quote text found verbatim in it. This is grounding and structural validation, not proof of factual or pedagogical correctness. Generated content still requires review; no vector search, external curriculum verification or live web research is performed.
+The selected AI provider receives the selected chunks, notebook scope and relevant learner state. Source text is treated as untrusted data. Chat citations must name an actual supplied chunk and quote text found verbatim in it. This is grounding and structural validation, not proof of factual or pedagogical correctness. Generated content still requires review; no vector search, external curriculum verification or live web research is performed.
 
 The sample explainer photo is from [Unsplash](https://images.unsplash.com/photo-1517976487492-5750f3195933) and is served locally. Fonts are bundled locally as well.
 
@@ -76,9 +82,11 @@ npm run test:e2e
 npm run build
 ```
 
-Browser tests require installed Google Chrome. Playwright starts its own server on port 3107 with `.next-test` output, explicitly selected SQLite storage, a separate database file and Gemini disabled. It checks API ownership, origin protection, real PDF extraction, cited excerpts, output validation, reward integrity, browser persistence and responsive interactions. Test screenshots and traces are written to `test-results`.
+Browser tests require installed Google Chrome. Playwright starts its own server on port 3107 with `.next-test` output, explicitly selected SQLite storage, a separate database file and both NVIDIA and Gemini disabled. It checks API ownership, origin protection, real PDF extraction, cited excerpts, output validation, reward integrity, browser persistence and responsive interactions. Test screenshots and traces are written to `test-results`.
 
-`npm test` also exercises the Supabase migration in PGlite, including permissions, namespace isolation, atomic seed operations, revision checks and source invalidation. These tests do not replace a live Supabase connection check.
+`npm test` uses the `react-server` condition for server-only AI imports. Mocked AI tests cover provider selection, complete request bodies, invalid/truncated output, unsupported citations, sanitized provider errors and offline fallback without consuming quota. They do not prove current live model availability or content quality.
+
+It also exercises the Supabase migration in PGlite, including permissions, namespace isolation, atomic seed operations, revision checks and source invalidation. These tests do not replace a live Supabase connection check.
 
 Production build/start commands use `.next-build`, separate from the running development server:
 
@@ -91,6 +99,6 @@ npm start -- --port 3001
 
 This is an anonymous prototype, not a production school platform. A server-issued HttpOnly learner cookie owns each browser's notebooks. Clearing the cookie loses access; there is no account recovery, cross-device sign-in, administrator role system, shared curriculum distribution or school tenancy. Practice answers are available to the browser, so diagnostics are not secure examinations.
 
-Before a school deployment, add authenticated users and roles, a shared curriculum catalogue, consent/retention policies, upload scanning, backups and centrally enforced usage limits. Current rate limiting is in-process. Only upload materials you have permission to use; selected text is sent to Google when Gemini is enabled.
+Before a school deployment, add authenticated users and roles, a shared curriculum catalogue, consent/retention policies, upload scanning, backups and centrally enforced usage limits. Current rate limiting is in-process. Only upload materials you have permission to use; selected text is sent to NVIDIA when its key is configured, or Google when only Gemini is configured.
 
 Use Supabase on ephemeral/serverless hosts such as Vercel. SQLite requires a Node server with a persistent writable volume and HTTPS outside localhost. Back up SQLite using SQLite-aware tooling; do not copy an open database without its WAL state. Configure and verify a backup/retention policy for hosted data before relying on it for learners.

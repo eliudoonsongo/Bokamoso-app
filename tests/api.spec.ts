@@ -15,6 +15,8 @@ async function progress(request: APIRequestContext, data: WorkspaceData, action:
 
 test("browser origin checks accept the external host and reject foreign origins", async ({ request }) => {
   const data = await workspace(request);
+  expect(data.aiConfigured).toBe(false);
+  expect(data.ai).toBeNull();
   const note = { notebookId: data.notebook.id, title: "Origin check", content: "A note from the same browser origin." };
   const allowed = await request.post("/api/notes", { data: note, headers: { origin: "http://127.0.0.1:3107" } });
   expect(allowed.status()).toBe(201);
@@ -58,6 +60,7 @@ test("regenerating a quest cannot re-award a completed module", async ({ request
   await progress(request, data, { action: "answer", questionId: question.questionId, optionIndex: 0 });
   const generated = await request.post("/api/suite", { data: { notebookId: data.notebook.id, sourceIds: data.sources.map((source) => source.id) } });
   expect(generated.ok()).toBeTruthy();
+  expect(generated.headers()["x-generation-mode"]).toBe("sample");
   validateSuite(await generated.json());
   const regenerated = await workspace(request);
   expect(regenerated.suiteId).not.toBe(data.suiteId);
@@ -73,6 +76,7 @@ test("selected sources ground chat and unsupported questions abstain", async ({ 
   const source = data.sources[0];
   const response = await request.post("/api/chat", { data: { notebookId: data.notebook.id, sourceIds: [source.id], question: "Explain inertia" } });
   expect(response.ok()).toBeTruthy();
+  expect((await response.json()).mode).toBe("source-excerpts");
   const saved = await workspace(request);
   const answer = saved.messages.at(-1)!;
   expect(answer.citations?.length).toBeGreaterThan(0);
