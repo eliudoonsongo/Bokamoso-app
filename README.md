@@ -72,6 +72,16 @@ The selected AI provider receives the selected chunks, notebook scope and releva
 
 The sample explainer photo is from [Unsplash](https://images.unsplash.com/photo-1517976487492-5750f3195933) and is served locally. Fonts are bundled locally as well.
 
+## Human Atlas For Life Sciences
+
+Life Science, Life Sciences and Biology notebooks have a **Human Atlas** entry in Studio, including notebooks without uploaded sources or a generated suite. It opens a full-screen, locally served 3D reference at `/atlas`. A standalone atlas visit is reference-only; open it from a notebook to save observations and return with a draft question.
+
+The integration preserves all 2,234 BodyParts3D meshes, 3,432 named concepts and 15 display systems from [ashemag/human-atlas](https://github.com/ashemag/human-atlas). Students can search, rotate, zoom, select, isolate and explode anatomy, use Life Sciences topic presets, and save attributed observations. **Ask notebook** returns to the original notebook with its selected sources and a draft question; it does not send a model request automatically. Atlas exploration does not change assessed mastery, XP, or the six-field learning-suite contract.
+
+The model is an adult male reference, not a complete human anatomy or a verified school syllabus. Female reproductive anatomy and many microscopic details are not included. Organ descriptions are distinguished from general system context. The initial compressed geometry download is about 33 MB, requested only on entering the atlas and cached at a versioned asset path. Text search remains available if WebGL cannot start.
+
+[The integration guide](docs/human-atlas-integration.md) documents the upstream architecture, learning workflow, scope, and validation. The original application is MIT licensed; anatomy data is CC BY 4.0. Preserve [the original license](public/atlas/HUMAN-ATLAS-LICENSE.txt) and [data attribution](public/atlas/ATTRIBUTION.md) when distributing the app or assets.
+
 ## Verification
 
 ```sh
@@ -87,6 +97,10 @@ Browser tests require installed Google Chrome. Playwright starts its own server 
 `npm test` uses the `react-server` condition for server-only AI imports. Mocked AI tests cover provider selection, complete request bodies, invalid/truncated output, unsupported citations, sanitized provider errors and offline fallback without consuming quota. They do not prove current live model availability or content quality.
 
 It also exercises the Supabase migration in PGlite, including permissions, namespace isolation, atomic seed operations, revision checks and source invalidation. These tests do not replace a live Supabase connection check.
+
+Atlas tests validate the real catalog, anatomy search, topic landmarks, gzip decoding, exploded packing, gesture handling and notebook handoff. Browser tests load real geometry, inspect canvas pixels, exercise the camera and study controls, and cover 1440px desktop, 390px/320px phones, landscape, and unavailable-WebGL fallback. Physical-device performance and real multitouch hardware still need device testing.
+
+After `npm run build`, run `npm run test:atlas:production` for the repeated two-worker atlas stress gate. It starts the built app behind local HTTPS on ports 3110/3111 with disposable SQLite storage and both AI providers disabled. The checks include failed downloads, repeated graphics-context recovery, throttled interaction, note-save races and twelve concurrent learner sessions. See [the stress-test details](docs/human-atlas-integration.md#production-stress-gate).
 
 Production build/start commands use `.next-build`, separate from the running development server:
 

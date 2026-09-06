@@ -85,6 +85,11 @@ input[type="range"] { accent-color: var(--green); cursor: pointer; }
 .save-status svg { color: #829775; }
 .notebook-toolbar-actions .button { font-size: 11px; min-height: 33px; }
 .mobile-pane-tabs { display: none; }
+.atlas-launch { display: flex; align-items: center; gap: 13px; padding: 17px 2px; margin-top: 17px; border-top: 1px solid #e3e9df; border-bottom: 1px solid #e3e9df; color: #416d50; text-decoration: none; }
+.atlas-launch > span { flex: 1; min-width: 0; }
+.atlas-launch strong { display: block; font-size: 13px; font-weight: 600; }
+.atlas-launch small { display: block; font-size: 10px; color: #7c8d76; margin-top: 5px; }
+.atlas-launch:hover { color: #265b3b; background: #f4f8f0; }
 .workspace-grid { display: grid; grid-template-columns: minmax(235px, .84fr) minmax(380px, 1.93fr) minmax(300px, 1.05fr); flex: 1; min-height: 0; gap: 14px; }
 .workspace-pane { border: 1px solid #e1e6dc; border-radius: 8px; background: var(--paper); overflow: hidden; min-width: 0; display: flex; flex-direction: column; }
 .pane-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 18px; flex: 0 0 54px; min-height: 54px; border-bottom: 1px solid #edf0e9; position: relative; }
