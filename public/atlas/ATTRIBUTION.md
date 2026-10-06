@@ -15,15 +15,20 @@ Source OBJ comments mention an older CC BY-SA 2.1 Japan license. The official cu
 
 BodyParts3D represents an adult male reference anatomy based on TARO MRI and anatomical illustration refinements. It is not a complete model of every possible human anatomical structure or variation. This interface is educational and is not a clinical tool.
 
-## Historical assets (not included in the current release)
+## Female reference: Human Reference Atlas / HuBMAP
 
-Earlier repository revisions included female reference anatomy: Kristen Browne and Heidi Schlehlein, Human Reference Atlas / HuBMAP, *3D Reference Organ Set for Female v1.5* (2023). CC BY 4.0. Geometry adapted for this viewer.
+Included female reference anatomy: Kristen Browne and Heidi Schlehlein, Human Reference Atlas / HuBMAP, *3D Reference Organ Set for Female v1.5* (2023). CC BY 4.0. Geometry originally adapted by Human Atlas and preserved in Bokamoso.
 
 - Source DOI: https://doi.org/10.48539/HBM352.BTSQ.586
-- Dataset: https://lod.humanatlas.io/ref-organ/united-female/v1.5
+- Dataset library: https://humanatlas.io/3d-reference-library
+- DOI metadata and license: https://api.datacite.org/dois/10.48539/HBM352.BTSQ.586
 - Original GLB: https://cdn.humanatlas.io/digital-objects/ref-organ/united-female/v1.5/assets/3d-vh-f-united.glb
 - License: https://creativecommons.org/licenses/by/4.0/
 
 Adaptations: translated native meter/Y-up coordinates onto the stage, coincident vertices welded and source normals averaged, geometry simplified with a 0.2% per-structure relative error bound, and normals quantized. Colors and display systems are curated for this interface. All 888 source meshes are represented, with 1,073 source nodes available as selectable individual or compound concepts.
 
 This is a reference assembly with whole-body surface and selected organs, including female reproductive anatomy. Its skeleton and muscle coverage is partial. It is not a complete model of every human structure or a single-person scan. Eight placenta/umbilical structures are classified under Pregnancy reference and hidden by default.
+
+The optimized manifest and all 20 binary/gzip assets were imported byte-for-byte from Human Atlas commit `d72b4f6db42e41a8db84b1c19ff6d86ee7b65284`. The imported model contains 1,810,038 triangles; compressed geometry totals 23,616,158 bytes. Git blob hashes and SHA-256 checksums are recorded in `hra-female-v1.5/provenance.json`. The official original GLB remains available at the source URL above; obsolete `lod.humanatlas.io` and `purl.humanatlas.io` landing pages returned 404 during integration.
+
+Bokamoso changes the interface, camera framing, search/navigation and study prompts, not these anatomical buffers. Male BodyParts3D and female HRA references have different coverage and concept granularity; their piece counts are not a like-for-like comparison of anatomy. Selected-reference attribution and limitations are included in saved notebook observations.

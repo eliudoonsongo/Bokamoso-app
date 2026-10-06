@@ -34,3 +34,11 @@ test("atlas question handoff respects the chat input limit", () => {
   const returned = new URL(atlasNotebookUrl("notebook", [], "question".repeat(400)), "https://bokamoso.example");
   assert.equal(atlasReturnState(returned.searchParams, []).question.length, 2000);
 });
+
+test("female reference survives a notebook round trip without changing the source selection", () => {
+  const incoming = new URL(atlasUrl("biology", ["source-one"], "female"), "https://bokamoso.example");
+  assert.equal(incoming.searchParams.get("model"), "female");
+  const returned = new URL(atlasNotebookUrl("biology", ["source-one"], "Explain the uterus", "female"), incoming);
+  assert.equal(returned.searchParams.get("atlasModel"), "female");
+  assert.deepEqual(atlasReturnState(returned.searchParams, ["source-one", "source-two"]), { sourceIds: ["source-one"], question: "Explain the uterus" });
+});

@@ -1,7 +1,7 @@
 # Human Atlas Assets
 
-The `bodyparts3d-v4` directory preserves the browser-ready manifest and binary geometry from [Human Atlas](https://github.com/ashemag/human-atlas). Both gzip chunks and uncompressed fallbacks are included. No anatomy is fetched from the upstream demo at runtime.
+The `bodyparts3d-v4` directory preserves the male browser-ready manifest and binary geometry from [Human Atlas](https://github.com/ashemag/human-atlas). The `hra-female-v1.5` directory preserves the optimized female assets from upstream commit `d72b4f6db42e41a8db84b1c19ff6d86ee7b65284`. Both datasets include gzip chunks and uncompressed fallbacks. Only the selected reference is loaded, and no anatomy is fetched from the upstream demo at runtime.
 
-See [ATTRIBUTION.md](ATTRIBUTION.md) for the BodyParts3D source, CC BY 4.0 license, and geometry adaptations. See [HUMAN-ATLAS-LICENSE.txt](HUMAN-ATLAS-LICENSE.txt) for the original application license.
+See [ATTRIBUTION.md](ATTRIBUTION.md) for both datasets' sources, CC BY 4.0 licenses, and geometry adaptations. See [HUMAN-ATLAS-LICENSE.txt](HUMAN-ATLAS-LICENSE.txt) for the original application license. Female asset checksums are in [provenance.json](hra-female-v1.5/provenance.json); the [import script](../../scripts/import-female-atlas.mjs) verifies the pinned source before accepting a file.
 
-Bokamoso relocates these assets without modifying their anatomical geometry. The reference is adult male, incomplete with respect to human variation, and educational rather than clinical. System colors are illustrative, not natural tissue colors. Atlas reference text is not automatically added to students' uploaded source material.
+Bokamoso relocates these assets without modifying their anatomical geometry. The female reference is an organ assembly with partial skeleton and muscle coverage, not an equally complete counterpart to BodyParts3D. Both are educational references, not clinical tools or complete accounts of human variation. Pregnancy references are separately opt-in. System colors are illustrative, not natural tissue colors. Atlas reference text is not automatically added to students' uploaded source material.

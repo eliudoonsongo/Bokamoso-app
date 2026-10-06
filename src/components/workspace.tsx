@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Activity, ArrowRight, ArrowUp, Atom, Award, BookMarked, BookOpen, BookOpenText, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Clock3, Copy, Download, Ellipsis, FileText, Flag, GraduationCap, Layers, Loader2, MessageSquare, Network, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, Share2, ShieldCheck, SlidersHorizontal, Sparkles, StickyNote, Target, Trash2, Video, X, Zap, type LucideIcon } from "lucide-react";
 import { api, downloadJson } from "@/lib/client";
 import { atlasReturnState, atlasUrl, isLifeSciences } from "@/lib/atlas-navigation";
+import { atlasModelId, type AtlasModelId } from "@/lib/atlas-models";
 import type { LearnerProgress, LearningSuite, Source } from "@/lib/learning";
 import type { ChatMessage, Note, WorkspaceData } from "@/lib/types";
 import { AddSourceForm, NewNotebookForm, NotebookList, NoteForm, SourcePreview } from "./workspace-forms";
@@ -42,6 +43,7 @@ export default function Workspace() {
   const [clearConfirm, setClearConfirm] = useState(false);
   const [savedFilter, setSavedFilter] = useState<"all" | "notes">("all");
   const [exportCopied, setExportCopied] = useState(false);
+  const [atlasModel, setAtlasModel] = useState<AtlasModelId>("male");
   const [switchingNotebook, setSwitchingNotebook] = useState(false);
   const chatBottom = useRef<HTMLDivElement>(null);
   const navigationVersion = useRef(0);
@@ -56,11 +58,13 @@ export default function Workspace() {
         if (!active) return;
         const sourceIds = workspace.sources.map((source) => source.id);
         const restored = atlasReturnState(params, sourceIds);
+        const reference = atlasModelId(params.get("atlasModel"));
+        setAtlasModel(reference);
         activeNotebookId.current = workspace.notebook.id;
         setData(workspace); setSelected(restored?.sourceIds || sourceIds);
         if (restored) {
           setQuestion(restored.question);
-          window.history.replaceState(null, "", `?notebook=${encodeURIComponent(workspace.notebook.id)}`);
+          window.history.replaceState(null, "", `?notebook=${encodeURIComponent(workspace.notebook.id)}${reference === "female" ? "&atlasModel=female" : ""}`);
         }
       })
       .catch((failure) => { if (active) setLoadError(failure.message); });
@@ -77,7 +81,7 @@ export default function Workspace() {
       const workspace = await api<WorkspaceData>(`/api/workspace${id ? `?notebookId=${encodeURIComponent(id)}` : ""}`);
       if (navigationVersion.current !== version) return;
       activeNotebookId.current = workspace.notebook.id;
-      setData(workspace); setSelected(workspace.sources.map((source) => source.id)); setQuestion(""); setSearch(""); setChatTab("chat"); setClearConfirm(false);
+      setData(workspace); setSelected(workspace.sources.map((source) => source.id)); setQuestion(""); setSearch(""); setChatTab("chat"); setClearConfirm(false); setAtlasModel("male");
       window.history.replaceState(null, "", `?notebook=${encodeURIComponent(workspace.notebook.id)}`);
     } catch (failure) { if (navigationVersion.current !== version) return; if (data) setToast((failure as Error).message); else setLoadError((failure as Error).message); }
     finally { if (navigationVersion.current === version) setSwitchingNotebook(false); }
@@ -191,7 +195,7 @@ export default function Workspace() {
       </section>
 
       <aside className={`workspace-pane studio-pane ${activePane === "studio" ? "mobile-active" : ""}`}><div className="pane-header"><h2>Studio <Sparkles size={15} /></h2><IconButton icon={SlidersHorizontal} label="Studio settings" onClick={() => setModal("settings")} /></div><div className="studio-scroll"><div className="studio-intro"><h3>Make it make sense.</h3><p>A new way into what you&apos;re learning.</p></div><div className="studio-tool-grid">{studioTools.map(({ id, label, detail, icon: Icon, tone }) => <button className={`studio-tool ${tone}`} key={id} disabled={generating || !selected.length} onClick={() => suite ? openTool(id) : generate(id)}><div><Icon size={21} strokeWidth={1.65} /><ArrowRight size={14} className="tool-arrow" /></div><strong>{label}</strong><span>{detail}</span></button>)}</div>
-          {isLifeSciences(data.notebook.subject) && <Link className="atlas-launch" prefetch={false} href={atlasUrl(data.notebook.id, selected)}><Activity size={24} /><span><strong>Human Atlas</strong><small>3D anatomy / Life Sciences</small></span><ArrowRight size={16} /></Link>}
+          {isLifeSciences(data.notebook.subject) && <Link className="atlas-launch" prefetch={false} href={atlasUrl(data.notebook.id, selected, atlasModel)}><Activity size={24} /><span><strong>Human Atlas</strong><small>3D anatomy / Life Sciences</small></span><ArrowRight size={16} /></Link>}
           <button className="generate-button" disabled={!selected.length || generating || asking} onClick={() => generate()}>{generating ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />}{generating ? "Creating your learning suite..." : "Generate learning suite"}<span>{generating ? "" : <ArrowRight size={15} />}</span></button>
           <section className="quest-preview"><div className="section-heading"><h3><Flag size={15} /> YOUR NEXT STEP</h3><span className="personalised-tag">For you</span></div><div className="quest-preview-content"><span className="quest-small-icon"><Target size={24} strokeWidth={1.4} /></span><div><h4>{gap ? `Revisit ${gap.label.toLowerCase()}` : data.suite?.gamifiedQuestPlan.questTitle || "Start your learning journey"}</h4><p>{gap ? "One gap. A clear next step." : "Small steps. Stronger understanding."}</p></div></div><div className="quest-preview-footer"><span><Zap size={14} /> {data.suite?.gamifiedQuestPlan.xpReward || 100} XP <span className="reward-dot" /> <Clock3 size={13} /> 5 min</span><button onClick={() => suite ? openTool("quest") : generate("quest")} disabled={!selected.length || generating}>Start quest <ArrowRight size={15} /></button></div></section>
           <section className="saved-materials"><div className="section-heading"><h3>IN YOUR NOTEBOOK <span>{(data.suite ? 2 : 0) + data.notes.length}</span></h3><button className="saved-filter" title="Filter saved items" onClick={() => setSavedFilter(savedFilter === "all" ? "notes" : "all")}>{savedFilter === "all" ? "All" : "Notes"}<ChevronDown size={12} /></button></div>{data.suite && savedFilter === "all" && <><button className="saved-item" disabled={!suite} onClick={() => openTool("map")}><span className="saved-item-icon blue"><Network size={18} /></span><span><strong>The bigger picture</strong><small>Mind map · {data.suite.mindMap.length} concepts</small></span><ChevronRight size={15} /></button><button className="saved-item" disabled={!suite} onClick={() => openTool("flashcards")}><span className="saved-item-icon lavender"><Layers size={18} /></span><span><strong>A little recall goes a long way</strong><small>Flashcards · 5 cards</small></span><ChevronRight size={15} /></button></>}{data.notes.slice(0, 3).map((note) => <button className="saved-item" key={note.id} onClick={() => { setPreviewNote(note); setModal("note"); }}><span className="saved-item-icon yellow"><StickyNote size={18} /></span><span><strong>{note.title}</strong><small>Personal note</small></span><ChevronRight size={15} /></button>)}<button className="add-note-button" onClick={() => setModal("new-note")}><Plus size={16} /> Add a note</button></section>

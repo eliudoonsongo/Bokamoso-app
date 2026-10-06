@@ -1,16 +1,20 @@
+import type { AtlasModelId } from "./atlas-models";
+
 export function isLifeSciences(subject: string) {
   return /^(life sciences?|biology)$/.test(subject.trim().toLowerCase().replace(/[-_\s]+/g, " "));
 }
 
-export function atlasUrl(notebookId: string, sourceIds: string[]) {
+export function atlasUrl(notebookId: string, sourceIds: string[], model: AtlasModelId = "male") {
   const params = new URLSearchParams({ notebook: notebookId });
+  if (model === "female") params.set("model", model);
   sourceIds.forEach((id) => params.append("source", id));
   return `/atlas?${params}`;
 }
 
-export function atlasNotebookUrl(notebookId: string | null, sourceIds: string[], question = "") {
+export function atlasNotebookUrl(notebookId: string | null, sourceIds: string[], question = "", model: AtlasModelId = "male") {
   if (!notebookId) return "/";
   const params = new URLSearchParams({ notebook: notebookId, from: "atlas" });
+  if (model === "female") params.set("atlasModel", model);
   sourceIds.forEach((id) => params.append("source", id));
   if (question) params.set("question", question.slice(0, 2000));
   return `/?${params}`;

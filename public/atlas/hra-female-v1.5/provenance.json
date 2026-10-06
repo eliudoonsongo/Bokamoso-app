@@ -1,0 +1,135 @@
+{
+  "upstreamRepository": "https://github.com/ashemag/human-atlas",
+  "upstreamCommit": "d72b4f6db42e41a8db84b1c19ff6d86ee7b65284",
+  "dataset": "https://doi.org/10.48539/HBM352.BTSQ.586",
+  "license": "CC-BY-4.0",
+  "sourceGeometry": "https://cdn.humanatlas.io/digital-objects/ref-organ/united-female/v1.5/assets/3d-vh-f-united.glb",
+  "files": [
+    {
+      "name": "atlas-female.json",
+      "bytes": 572477,
+      "gitSha": "7ca542e2c4e8cf8af22927c0cc5cd9510c236a22",
+      "sha256": "1525c07d2ed46263c086d1c6b2e52eb9b8f8985746e9a8259036bd6e1d9a1ced"
+    },
+    {
+      "name": "female-0.bin",
+      "bytes": 4803512,
+      "gitSha": "05ff8c8e4613727d5e62af1226b72370f512f71c",
+      "sha256": "d4dc9a6daa7f720d581f914c10d2d1bba02b64eadd2a5de22b1588b81fd09a0d"
+    },
+    {
+      "name": "female-0.bin.gz",
+      "bytes": 2784407,
+      "gitSha": "ab7febcf833b4353b0b4d72a7b85eaabddfda8ba",
+      "sha256": "5be1af59398611d868b87335566e3823270b2ecded92e009772ff2e24ba89273"
+    },
+    {
+      "name": "female-1.bin",
+      "bytes": 4009828,
+      "gitSha": "3b18c8b02d59b74e24a5cc1c95f3d9510a8ec4ae",
+      "sha256": "c20a0c492992b44d5e03fe61c6363fa9341b00ec9a255659285ef98b98f3e337"
+    },
+    {
+      "name": "female-1.bin.gz",
+      "bytes": 2344371,
+      "gitSha": "6f4679ed76002eadeb6f40d6942a4f27228adc93",
+      "sha256": "59fa3de8278900f89a3ca00cde0e1ed1e1781f9dbbb608061427f7bde5cd4bc5"
+    },
+    {
+      "name": "female-2.bin",
+      "bytes": 4122080,
+      "gitSha": "4c0251a10ebfcf220d882676077b6ab3802b948f",
+      "sha256": "7adeaf94028489b7192ade457f8217cc629c457263cd004e5ea84d248d9402e6"
+    },
+    {
+      "name": "female-2.bin.gz",
+      "bytes": 2669484,
+      "gitSha": "3143ebf8e25c09b811c614f39291106c926a9f5b",
+      "sha256": "8eb104b65d2ebc260d46bca53a72dc608823bb92479857e086a05f0ab6f8a093"
+    },
+    {
+      "name": "female-3.bin",
+      "bytes": 4028204,
+      "gitSha": "6acc9e885dbdab5406d3aeab7535f843aee2029c",
+      "sha256": "ad1e1f6a5d44d4de62d8cdaf7db8aeb0591d92ee9aff241d6278e7c3663ffc3c"
+    },
+    {
+      "name": "female-3.bin.gz",
+      "bytes": 2657729,
+      "gitSha": "f8fc097775d618e9761313c952ca13f9e17e61a4",
+      "sha256": "0cb4790cf13f36d4861c23f062c67854f890a3c04d0ea79a468bb7e8ec794092"
+    },
+    {
+      "name": "female-4.bin",
+      "bytes": 4033024,
+      "gitSha": "a44ba0b283cd1860621fa01f54069ebec512c567",
+      "sha256": "770e35500d09b74941686c515524961c6540fa15db4192dee987fa5c49b19fbd"
+    },
+    {
+      "name": "female-4.bin.gz",
+      "bytes": 2600965,
+      "gitSha": "e018cdc12cff7aeb03b49668ac598031e09b61b4",
+      "sha256": "0086b3dfb324bc953718d050948c082c4f46535dbcd09b3bc0f0ed9cf8fd496b"
+    },
+    {
+      "name": "female-5.bin",
+      "bytes": 4008296,
+      "gitSha": "e0c2e33b127adb4072ab1cfef52d106146410e3a",
+      "sha256": "b2f5790193688d20ba240b10ccf5d89d56f46d034071170167afa369c327f7fb"
+    },
+    {
+      "name": "female-5.bin.gz",
+      "bytes": 2396312,
+      "gitSha": "8a7b50c5d15ff8db17571f2028bf102212efd24e",
+      "sha256": "1e7f3eb3598282da4a2233c47990bbb03c4bb1a8fbfced41a08d3d31322c080d"
+    },
+    {
+      "name": "female-6.bin",
+      "bytes": 4036656,
+      "gitSha": "f4f87751a3569fde1aa9a61ddee71ae741a7089f",
+      "sha256": "8b9d1c038bf4b7951bc19a0e30dd3c7c65c29af3f2bd9f605b8048204c66ee40"
+    },
+    {
+      "name": "female-6.bin.gz",
+      "bytes": 2412038,
+      "gitSha": "b974406fdc0dbede60dca8c851d835008549cbc9",
+      "sha256": "cdcbcd98ae1381e6a04a738ee6b900a085dfad7866286e73a001eb458efb1a2d"
+    },
+    {
+      "name": "female-7.bin",
+      "bytes": 4010812,
+      "gitSha": "6954b54a9fab6fb0d9e66822a40d6468b532688d",
+      "sha256": "36e45735f6ff00dc799109a7789acf7caa7d2d9bd7a4c20bdd0b6177cf14af17"
+    },
+    {
+      "name": "female-7.bin.gz",
+      "bytes": 2423817,
+      "gitSha": "ddee310a32179ea5c35492a80727d424d7f9f473",
+      "sha256": "f297925a2eda76c09662f3b6aa7294c89f5e078fa2fb06aacea30d4758918977"
+    },
+    {
+      "name": "female-8.bin",
+      "bytes": 4047500,
+      "gitSha": "11f6f610c32b6f791a22591ccde8905b046d397b",
+      "sha256": "9505b45b629f3fedd69b49b0cff6cef9d5c86431aa0903529c5cc09faa7200e4"
+    },
+    {
+      "name": "female-8.bin.gz",
+      "bytes": 2576609,
+      "gitSha": "5d22f63961c022a9d363c1bbb9679176cd8e8efa",
+      "sha256": "e4d0dd4871ca8e2515ef664198fdcf7cfad71b881933959ff6dbcc74d7d07542"
+    },
+    {
+      "name": "female-9.bin",
+      "bytes": 1247296,
+      "gitSha": "edf0a6f452759ac6cf82917558f3f9f89113d65d",
+      "sha256": "b1988cec93d65044af32fd7da78852a4582fde6f4439470f430d0ef07936decb"
+    },
+    {
+      "name": "female-9.bin.gz",
+      "bytes": 750426,
+      "gitSha": "0da4236b3c7ccd85dce337f28ff5ba379dc721fa",
+      "sha256": "783898697313ed79da427b599778fb01e07525c624b2f607606ee9c68a831945"
+    }
+  ]
+}

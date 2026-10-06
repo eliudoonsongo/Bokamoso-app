@@ -10,6 +10,9 @@
 .back { display: inline-flex; align-items: center; gap: 7px; text-decoration: none; font-size: 12px; font-weight: 500; min-height: 36px; flex-shrink: 0; }
 .back:hover { color: #2c7c51; }
 .toolbar { min-height: 55px; padding: 8px 23px; display: flex; align-items: center; justify-content: space-between; gap: 15px; border-bottom: 1px solid #dce4dd; background: #f5f7f3; flex-shrink: 0; }
+.referenceSelector { display: inline-flex; flex-shrink: 0; gap: 3px; padding: 3px; background: #e7ece3; border: 1px solid #d9e1d4; border-radius: 5px; }
+.referenceSelector button { min-width: 63px; min-height: 30px; padding: 5px 10px; font-size: 12px; color: #657661; background: transparent; border-radius: 3px; }
+.referenceSelector button[aria-pressed="true"] { background: #fff; color: #315c3d; box-shadow: 0 1px 3px #1c321813; }
 .topicControl, .cameraControls { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .topicControl { color: #58735e; font-size: 12px; }
 .toolbar select { min-height: 35px; color: #364b3c; border: 1px solid #d6dfd4; border-radius: 5px; padding: 5px 25px 5px 9px; background: #fff; font-size: 12px; max-width: 100%; }
@@ -144,9 +147,11 @@
 }
 
 @media (max-width: 500px) {
-  .toolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 7px 13px; }
+  .toolbar { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 8px; padding: 7px 13px; }
+  .referenceSelector button { min-width: 51px; padding-inline: 6px; font-size: 11px; }
+  .topicControl > svg { display: none; }
   .topicControl select { width: 100%; }
-  .cameraControls { justify-content: space-between; }
+  .cameraControls { grid-column: 1 / -1; justify-content: space-between; }
   .cameraControls select { flex: 1; max-width: 135px; }
   .cameraControls :global(.icon-button) { width: 36px; height: 32px; }
   .identity h1 { font-size: 18px; }

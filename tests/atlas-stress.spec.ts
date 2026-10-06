@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { PNG } from "pngjs";
-import { ATLAS_TOPICS } from "../src/lib/atlas-study";
+import { atlasTopics } from "../src/lib/atlas-study";
 import type { Notebook, WorkspaceData } from "../src/lib/types";
 
 test.use({ launchOptions: { args: ["--enable-unsafe-swiftshader"] } });
@@ -146,7 +146,7 @@ test("leaving a stalled download and repeatedly reopening the atlas retires ever
   expect(errors).toEqual([]);
 });
 
-test("throttled loading and sustained camera, topic and mobile changes keep one responsive scene", async ({ page, context }, testInfo) => {
+for (const model of ["male", "female"] as const) test(`throttled ${model} loading and sustained camera, topic and mobile changes keep one responsive scene`, async ({ page, context }, testInfo) => {
   await trackGraphics(page);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   const diagnostics = await context.newCDPSession(page);
@@ -159,17 +159,17 @@ test("throttled loading and sustained camera, topic and mobile changes keep one 
   const aiCalls: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("request", (request) => {
-    if (request.url().includes("/atlas/bodyparts3d-v4/")) downloads.push(request.url());
+    if (/\/atlas\/(bodyparts3d-v4|hra-female-v1\.5)\//.test(request.url())) downloads.push(request.url());
     if (/\/api\/(chat|suite)$/.test(request.url())) aiCalls.push(request.url());
   });
   const started = Date.now();
-  await page.goto("/atlas");
+  await page.goto(`/atlas?model=${model}`);
   await expectRendered(page);
   const loadMilliseconds = Date.now() - started;
   const initialDownloads = downloads.length;
   const initial = await diagnostics.send("Performance.getMetrics");
   const actionsStarted = Date.now();
-  for (const topic of ATLAS_TOPICS) {
+  for (const topic of atlasTopics(model)) {
     await page.getByRole("combobox", { name: "Study topic" }).selectOption(topic.id);
     await page.getByRole("button", { name: "All", exact: true }).click();
     const toggles = page.getByRole("region", { name: "Anatomical systems" }).getByRole("checkbox");
@@ -182,7 +182,7 @@ test("throttled loading and sustained camera, topic and mobile changes keep one 
     await expect(explosion).toHaveValue("100");
     await explosion.press("Home");
     await expect(explosion).toHaveValue("0");
-    await chooseStructure(page, "FMA7088");
+    await chooseStructure(page, model === "female" ? "HRA:VH_F_uterus" : "FMA7088");
     await page.getByRole("button", { name: "Isolate structure", exact: true }).click();
     await expectRendered(page);
     for (const view of ["side", "back", "three-quarter", "front"]) await page.getByRole("combobox", { name: "Camera view" }).selectOption(view);
@@ -192,7 +192,7 @@ test("throttled loading and sustained camera, topic and mobile changes keep one 
   }
   for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 390, height: 844 }, { width: 1440, height: 900 }]) {
     await page.setViewportSize(viewport);
-    await chooseStructure(page, "FMA7205");
+    await chooseStructure(page, model === "female" ? "HRA:VH_F_left_kidney" : "FMA7205");
     await (await studyPanel(page)).getByRole("button", { name: "Isolate structure", exact: true }).click();
     await expectRendered(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
@@ -204,7 +204,7 @@ test("throttled loading and sustained camera, topic and mobile changes keep one 
   expect(downloads).toHaveLength(initialDownloads);
   expect(aiCalls).toEqual([]);
   expect(errors).toEqual([]);
-  await testInfo.attach("stress-metrics", { body: JSON.stringify({ cpuSlowdown: 4, networkBytesPerSecond: 4 * 1024 * 1024, latencyMilliseconds: 120, loadMilliseconds, actionMilliseconds: Date.now() - actionsStarted, topics: ATLAS_TOPICS.length, initial, final, graphics }, null, 2), contentType: "application/json" });
+  await testInfo.attach("stress-metrics", { body: JSON.stringify({ model, cpuSlowdown: 4, networkBytesPerSecond: 4 * 1024 * 1024, latencyMilliseconds: 120, loadMilliseconds, actionMilliseconds: Date.now() - actionsStarted, topics: atlasTopics(model).length, initial, final, graphics }, null, 2), contentType: "application/json" });
 });
 
 test("overlapping observation edits, a failed save and a selection change preserve the right note", async ({ page }) => {
@@ -290,4 +290,141 @@ test("twelve concurrent learners retain their own notes and reject cross-noteboo
     timings.sort((first, second) => first - second);
     await testInfo.attach("local-concurrency-metrics", { body: JSON.stringify({ learners: learners.length, writes: timings.length, medianMilliseconds: timings[Math.floor(timings.length / 2)], p95Milliseconds: timings[Math.floor(timings.length * 0.95)], maximumMilliseconds: timings.at(-1) }), contentType: "application/json" });
   } finally { await Promise.all(learners.map((learner) => learner.dispose())); }
+});
+
+test("late female catalogs and interrupted model downloads cannot replace the current reference", async ({ page }, testInfo) => {
+  type CatalogWindow = Window & { femaleCatalogGate: { held: number; hold: boolean; release: (() => void)[] } };
+  await trackGraphics(page);
+  await page.addInitScript(() => {
+    const original = window.fetch.bind(window);
+    const gate = { held: 0, hold: true, release: [] as (() => void)[] };
+    (window as unknown as CatalogWindow).femaleCatalogGate = gate;
+    window.fetch = async (input, options) => {
+      if (typeof input === "string" && input.endsWith("/atlas-female.json") && gate.hold) {
+        const response = await original(input, { ...options, signal: undefined });
+        gate.held++;
+        await new Promise<void>((resolve) => gate.release.push(resolve));
+        return response;
+      }
+      return original(input, options);
+    };
+  });
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/atlas");
+  await expectRendered(page);
+  const selector = page.getByRole("group", { name: "Anatomy reference" });
+  await selector.getByRole("button", { name: "Female", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as unknown as CatalogWindow).femaleCatalogGate.held)).toBeGreaterThan(0);
+  await selector.getByRole("button", { name: "Male", exact: true }).click();
+  await expectRendered(page);
+  await page.evaluate(async () => {
+    const gate = (window as unknown as CatalogWindow).femaleCatalogGate;
+    gate.hold = false;
+    gate.release.forEach((release) => release());
+    for (let frame = 0; frame < 3; frame++) await new Promise(requestAnimationFrame);
+  });
+  await expect(page.locator("main[data-atlas-model]")).toHaveAttribute("data-atlas-model", "male");
+  await expectRendered(page);
+  await chooseStructure(page, "FMA7088");
+  await expect(page.getByRole("heading", { name: "heart", exact: true })).toBeVisible();
+
+  let heldChunk = false;
+  let holdChunk = true;
+  const chunkGate = Promise.withResolvers<void>();
+  await page.route("**/female-0.bin.gz", async (route) => {
+    if (holdChunk) { heldChunk = true; await chunkGate.promise; }
+    await route.continue().catch(() => {});
+  });
+  await selector.getByRole("button", { name: "Female", exact: true }).click();
+  await expect.poll(() => heldChunk).toBeTruthy();
+  await expect(page.getByRole("button", { name: "Zoom in", exact: true })).toBeDisabled();
+  await selector.getByRole("button", { name: "Male", exact: true }).click();
+  holdChunk = false;
+  chunkGate.resolve();
+  await expectRendered(page);
+  for (const model of ["Female", "Male", "Female", "Male", "Female", "Male"]) {
+    await selector.getByRole("button", { name: model, exact: true }).click();
+    await expectRendered(page);
+    await expect(page.getByRole("heading", { name: "Study focus", exact: true })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => (window as unknown as GraphicsWindow).atlasGraphics.filter((context) => !context.lost).length)).toBe(1);
+  }
+  expect(errors).toEqual([]);
+  await testInfo.attach("model-switch-graphics", { body: JSON.stringify(await page.evaluate(() => (window as unknown as GraphicsWindow).atlasGraphics)), contentType: "application/json" });
+});
+
+test("female raw downloads recover from failure and context loss without corrupting the male reference", async ({ page }) => {
+  await trackGraphics(page);
+  await page.addInitScript(() => Object.defineProperty(window, "DecompressionStream", { value: undefined, configurable: true }));
+  let fail = true;
+  const downloads: string[] = [];
+  page.on("request", (request) => { if (/\/female-\d+\.bin/.test(request.url())) downloads.push(request.url()); });
+  await page.route("**/female-0.bin", (route) => fail ? route.fulfill({ status: 503, body: "Unavailable" }) : route.continue());
+  await page.goto("/atlas?model=female");
+  const alert = page.getByRole("region", { name: "3D anatomy explorer" }).getByRole("alert");
+  await expect(alert).toContainText("could not be loaded");
+  await expect(page.locator("canvas")).toHaveCount(0);
+  const selector = page.getByRole("group", { name: "Anatomy reference" });
+  await selector.getByRole("button", { name: "Male", exact: true }).click();
+  await expectRendered(page);
+  fail = false;
+  await selector.getByRole("button", { name: "Female", exact: true }).click();
+  await expectRendered(page);
+  for (let cycle = 0; cycle < 2; cycle++) {
+    expect(await page.locator("canvas").evaluate((canvas: HTMLCanvasElement) => {
+      const graphics = canvas.getContext("webgl2") || canvas.getContext("webgl");
+      const extension = graphics?.getExtension("WEBGL_lose_context");
+      if (!extension) return false;
+      extension.loseContext();
+      return true;
+    })).toBeTruthy();
+    await expect(alert).toContainText("paused by your device");
+    await page.getByRole("button", { name: "Retry viewer", exact: true }).click();
+    await expectRendered(page);
+  }
+  expect(new Set(downloads.map((url) => new URL(url).pathname)).size).toBe(10);
+  expect(downloads.some((url) => url.endsWith(".gz"))).toBeFalsy();
+  await expect.poll(() => page.evaluate(() => (window as unknown as GraphicsWindow).atlasGraphics.filter((context) => !context.lost).length)).toBe(1);
+  await expect(selector.getByRole("button", { name: "Female", exact: true })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("a pending female note save remains attributed to the female reference after switching models", async ({ page }) => {
+  const created = await page.request.post("/api/notebooks", { data: { title: "Female note race", grade: 12, subject: "Life Sciences", module: "Reproduction" } });
+  expect(created.status()).toBe(201);
+  const notebook: Notebook = await created.json();
+  await page.goto(`/atlas?model=female&notebook=${notebook.id}`);
+  await expectRendered(page);
+  await chooseStructure(page, "HRA:VH_F_uterus");
+  await page.getByRole("textbox", { name: "Your observation" }).fill("The female reference shows the uterus.");
+  const saving = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  await page.route("**/api/notes", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    saving.resolve();
+    await release.promise;
+    await route.continue();
+  });
+  const response = page.waitForResponse((result) => result.url().endsWith("/api/notes") && result.request().method() === "POST");
+  await page.getByRole("button", { name: "Save observation", exact: true }).click();
+  await saving.promise;
+  const selector = page.getByRole("group", { name: "Anatomy reference" });
+  await selector.getByRole("button", { name: "Male", exact: true }).click();
+  await expectRendered(page);
+  await chooseStructure(page, "FMA7088");
+  await page.getByRole("textbox", { name: "Your observation" }).fill("The male heart note must stay separate.");
+  release.resolve();
+  expect((await response).status()).toBe(201);
+  await expect(page.getByRole("button", { name: "Save observation", exact: true })).toBeEnabled();
+  await expect(page.getByRole("textbox", { name: "Your observation" })).toHaveValue("The male heart note must stay separate.");
+  await expect(page.locator('div[role="status"]')).toHaveCount(0);
+  const data: WorkspaceData = await (await page.request.get(`/api/workspace?notebookId=${notebook.id}`)).json();
+  expect(data.notes).toHaveLength(1);
+  expect(data.notes[0].title).toContain("Female");
+  expect(data.notes[0].content).toContain("HRA united-female v1.5");
+  expect(data.notes[0].content).not.toContain("The male heart note");
+  expect(data.progress.xp).toBe(0);
+  await selector.getByRole("button", { name: "Female", exact: true }).click();
+  await expectRendered(page);
+  await chooseStructure(page, "HRA:VH_F_uterus");
+  await expect(page.getByRole("button", { name: "Saved to notebook", exact: true })).toBeDisabled();
 });
