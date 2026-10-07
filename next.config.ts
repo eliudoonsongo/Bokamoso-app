@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  allowedDevOrigins: ["127.0.0.1"],
   serverExternalPackages: ["pdf-parse"],
   async headers() {
     return ["/atlas/bodyparts3d-v4/:path*", "/atlas/hra-female-v1.5/:path*"].map((source) => ({
