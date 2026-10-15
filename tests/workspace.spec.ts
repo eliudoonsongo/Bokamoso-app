@@ -67,6 +67,7 @@ test("map, explainer, notes and exact JSON export are usable", async ({ page }, 
   await dialog.getByRole("button", { name: "Close dialog", exact: true }).click();
   await page.getByRole("button", { name: /^Video overview See the bigger picture/ }).click();
   dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("button", { name: "Mute narration" })).toBeVisible();
   const image = await page.request.get("/motion.jpg");
   expect(image.ok()).toBeTruthy();
   expect(image.headers()["content-type"]).toContain("image/jpeg");
