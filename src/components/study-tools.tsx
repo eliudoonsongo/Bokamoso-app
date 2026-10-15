@@ -69,7 +69,7 @@ export function MindMap({ suite, progress }: { suite: LearningSuite; progress: L
 export function VideoSummary({ suite, sample }: { suite: LearningSuite; sample: boolean }) {
   const [seconds, setSeconds] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [sound, setSound] = useState(false);
+  const [sound, setSound] = useState(true);
   const [showScript, setShowScript] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const activeIndex = suite.videoSummaryScript.findIndex((segment) => { const [start, end] = timestampSeconds(segment.timestamp); return seconds >= start && seconds < end; });
